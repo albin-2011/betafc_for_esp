@@ -84,7 +84,7 @@ TABS = Object.fromEntries(['setup', 'calib', 'ports', 'config', 'power', 'failsa
 // ---------- guided calibration ----------
 const calw = {step: -1, phase: ''};
 const bb = {on: false, rows: []};
-function say(t){ const v = $('#calVoice'); if(v && v.checked && 'speechSynthesis' in window){ speechSynthesis.cancel(); speechSynthesis.speak(new SpeechSynthesisUtterance(t)); } }
+function say(t){ const v = $('#calVoice'); if(v && v.checked && 'speechSynthesis' in window){ speechSynthesis.cancel(); setTimeout(() => speechSynthesis.speak(new SpeechSynthesisUtterance(t)), 120); } }
 function calShow(title, text, pct){ $('#calTitle').textContent = title; $('#calText').textContent = text; $('#calBar').style.width = pct + '%'; }
 function calMark(){ document.querySelectorAll('.cstep').forEach((e, i) => e.className = 'cstep' + (i < calw.step ? ' done' : i == calw.step ? ' cur' : '')); }
 function calMove(){
@@ -95,15 +95,24 @@ function calMove(){
 }
 function calStart(){ if(!connected){ msg('Connect first.'); return; } calw.step = 0; calMove(); }
 function calTick(){
-  if(calw.step < 0 || calw.phase != 'move') return;
-  const left = Math.ceil((calw.t - Date.now()) / 1000);
-  if(left > 0){ $('#calText').textContent = CAL[calw.step][1] + ' Starting in ' + left + ' s...'; return; }
-  calw.phase = 'hold'; send(260, [calw.step]); say('Hold still'); $('#calText').textContent = 'Hold still...';
+  if(calw.step < 0) return;
+  if(calw.phase == 'move'){
+    const left = Math.ceil((calw.t - Date.now()) / 1000);
+    if(left > 0){ $('#calText').textContent = CAL[calw.step][1] + ' Starting in ' + left + ' s...'; return; }
+    calw.phase = 'hold'; calw.lastRx = Date.now(); calw.holdT = Date.now();
+    send(260, [calw.step]); say('Hold still'); $('#calText').textContent = 'Hold still...';
+  } else if(calw.phase == 'hold' && Date.now() - calw.lastRx > 3000){
+    $('#calText').textContent = 'The FC is not answering. Flash the latest espfc12.ino, reconnect, and start again.';
+  }
 }
-function calHandle(b){                       // state, pose, progress, done mask, live accel
+function calHandle(b){                       // state, pose, progress, done mask, live accel, reason
   for(let k = 0; k < 3; k++){ const v = (b[4 + 2 * k] | (b[5 + 2 * k] << 8)) << 16 >> 16; const el = $('#ca' + k); if(el) el.textContent = (v / 1000).toFixed(2); }
-  if(calw.step < 0 || calw.phase != 'hold' || b[1] != calw.step) return;
+  if(calw.step < 0 || calw.phase != 'hold') return;
+  calw.lastRx = Date.now();
+  if(Date.now() - calw.holdT < 400 || b[1] != calw.step) return;     // ignore old replies
+  const why = b.length > 10 ? b[10] : 0;
   $('#calBar').style.width = b[2] + '%';
+  $('#calText').textContent = 'Hold still... ' + b[2] + '%' + (why == 1 ? ' (the drone is moving)' : why == 2 ? ' (accelerometer reading looks wrong)' : '');
   if(b[0] == 2){
     calw.step++;
     if(calw.step < 6) calMove();
