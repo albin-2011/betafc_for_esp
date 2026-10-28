@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ESPFC12 Configurator</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+  <div class="logo">ESP<b>FC12</b></div>
+  <div class="sens"><span id="sGyro">GYRO</span><span id="sAcc">ACC</span><span>MAG</span><span>BARO</span><span>GPS</span></div>
+  <span id="arm" class="badge">DISARMED</span>
+  <span id="batt" class="mute"></span>
+  <span id="status">Disconnected</span>
+  <button id="btn">Connect</button>
+</header>
+<div id="warn">Web Serial is not supported here. Open this page in Chrome or Edge on a computer. If it still fails, run "python -m http.server" in this folder and open http://localhost:8000.</div>
+<main>
+  <aside>
+    <nav id="nav"></nav>
+    <div id="info">
+      <div><span>Battery</span><b id="sbV">-</b></div>
+      <div><span>Status</span><b id="sbArm">-</b></div>
+      <div><span>Cycle time</span><b id="sbCyc">-</b></div>
+      <div><span>CPU load</span><b id="sbCpu">-</b></div>
+    </div>
+  </aside>
+  <div id="tabs"></div>
+</main>
+<footer>
+  <button id="save">Save to FC</button>
+  <button id="cal" class="alt">Calibrate</button>
+  <button id="def" class="alt">Reset defaults</button>
+  <button id="reboot" class="alt">Reboot</button>
+  <span class="mute" id="msg">Changes apply live. Click Save to FC to keep them after power-off.</span>
+</footer>
+<script src="js/tabs.js"></script>
+<script src="js/extras.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
